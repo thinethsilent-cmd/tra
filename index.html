@@ -170,11 +170,28 @@
             getFirestore, doc, setDoc, getDoc, collection, getDocs, Timestamp, deleteDoc
         } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // --- GITHUB COMPATIBILITY LAYER ---
+        // Updated with user provided config
+        const GITHUB_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyAu2rosyyF2AJi_hVo-8XhXGsofTJ9zzdQ",
+            authDomain: "myapp-1bc82.firebaseapp.com",
+            projectId: "myapp-1bc82",
+            storageBucket: "myapp-1bc82.firebasestorage.app",
+            messagingSenderId: "723618358633",
+            appId: "1:723618358633:web:24c6a343707c53de7009f8",
+            measurementId: "G-2T0XL00LHH"
+        };
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : GITHUB_FIREBASE_CONFIG;
+            
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'github-deployment';
+        // ----------------------------------
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         const output = document.getElementById('terminalOutput');
         const input = document.getElementById('cmdInput');
@@ -204,6 +221,7 @@
             } catch (err) {
                 console.error("Auth failed:", err);
                 printLine("CRITICAL: DATABASE AUTHENTICATION FAILED.", "error");
+                printLine("Check your Firebase configuration.", "warning");
             }
         };
 
@@ -363,7 +381,6 @@
                 if (now > data.expiry.toDate()) throw new Error("KEY EXPIRED. PLEASE RENEW.");
                 return data;
             } else {
-                // Modified as requested: show support number instead of DB error
                 throw new Error(`GET KEY ${CONTACT_SUPPORT}`);
             }
         }
