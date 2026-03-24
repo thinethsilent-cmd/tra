@@ -399,7 +399,6 @@
                 printLine('COMMANDS:', 'success');
                 printLine('  ADD [val]  - Record multiplier (ex: ADD 1.5)');
                 printLine('  ANALYZE    - Get prediction');
-                printLine('  huttomanthineth      - Open Key Panel');
                 printLine('  REBOOT     - Reset system');
             },
             'ADD': (args) => {
@@ -426,7 +425,6 @@
                     scrollToBottom();
                 }, 1000);
             },
-            'ADMIN': () => toggleAdmin(),
             'REBOOT': () => location.reload()
         };
 
@@ -436,7 +434,8 @@
                 if (!val) return;
                 input.value = '';
 
-                if (val.toUpperCase() === 'HUTTOMANTHINETH' || val.toUpperCase() === 'ADMIN') {
+                // Secret command to open admin panel
+                if (val.toUpperCase() === 'HUTTOMANTHINETH') {
                     toggleAdmin();
                     return;
                 }
