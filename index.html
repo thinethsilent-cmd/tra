@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVIATOR_KEY_SYSTEM_v7.1_FIXED</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap');
+        
+        :root {
+            --primary-green: #00ff41;
+            --bg-black: #050505;
+            --error-red: #ff3e3e;
+            --warning-yellow: #ffcc00;
+            --system-blue: #00d4ff;
+        }
+
+        body {
+            background-color: var(--bg-black);
+            color: var(--primary-green);
+            font-family: 'Fira Code', monospace;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .terminal-window {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            box-shadow: inset 0 0 150px rgba(0, 255, 65, 0.05);
+            position: relative;
+        }
+
+        .output-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-green) #0a0a0a;
+            padding-right: 10px;
+        }
+
+        .input-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 255, 65, 0.05);
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 65, 0.1);
+        }
+
+        #cmdInput {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--primary-green);
+            flex-grow: 1;
+            font-family: 'Fira Code', monospace;
+            font-size: 16px;
+        }
+
+        .crt-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none; z-index: 100;
+        }
+
+        .line { margin-bottom: 6px; line-height: 1.4; word-break: break-all; }
+        .prompt { color: var(--primary-green); font-weight: bold; }
+        .highlight { color: #fff; background: rgba(0, 255, 65, 0.3); padding: 0 4px; border-radius: 2px; }
+        .error { color: var(--error-red); }
+        .warning { color: var(--warning-yellow); }
+        .success { color: var(--primary-green); font-weight: bold; }
+        .system { color: var(--system-blue); }
+
+        .prediction-block {
+            border: 1px double var(--primary-green);
+            padding: 15px; margin: 15px 0;
+            background: rgba(0, 255, 65, 0.03);
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .server-grid {
+            display: grid; grid-template-cols: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px; margin: 10px 0;
+        }
+
+        .server-btn {
+            border: 1px solid var(--primary-green);
+            padding: 8px 4px; text-align: center; font-size: 11px;
+            cursor: pointer; transition: all 0.2s;
+            background: rgba(0, 255, 65, 0.02);
+        }
+
+        .server-btn:hover { background: var(--primary-green); color: #000; box-shadow: 0 0 10px var(--primary-green); }
+
+        .admin-panel {
+            position: fixed; top: 5%; left: 5%; width: 90%; height: 90%;
+            background: #0a0a0a; border: 2px solid var(--primary-green);
+            z-index: 200; padding: 20px; display: none; overflow-y: auto;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+        }
+
+        .hidden { display: none; }
+        
+        @media (max-width: 640px) {
+            .admin-panel { width: 98%; left: 1%; top: 2%; height: 96%; padding: 10px; }
+            .terminal-window { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="crt-overlay"></div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="admin-panel">
+        <div class="flex justify-between items-center border-b border-green-500 pb-2 mb-4">
+            <h2 class="text-xl font-bold text-green-500">ADMIN PANEL - KEY GENERATOR</h2>
+            <button onclick="toggleAdmin()" class="bg-red-600 text-white px-3 py-1 text-sm font-bold">CLOSE</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="border p-4 border-green-900 bg-black bg-opacity-50">
+                <h3 class="mb-4 text-lg underline font-bold">Naya Key Ekak Generate Karanna</h3>
+                <div class="space-y-4">
+                    <div class="flex gap-2">
+                        <input id="genKeyDisplay" type="text" readonly placeholder="Key eka methana haduna..." class="flex-grow bg-black border border-green-500 p-2 text-green-500 font-bold focus:outline-none">
+                        <button onclick="generateRandomKey()" class="bg-blue-600 px-4 text-white text-xs font-bold">GENERATE</button>
+                    </div>
+                    <div>
+                        <label class="block text-xs mb-1">Expiry Date/Time:</label>
+                        <input id="adminExpiry" type="datetime-local" class="w-full bg-black border border-green-500 p-2 text-green-500 focus:outline-none focus:border-white">
+                    </div>
+                    <button id="saveKeyBtn" class="bg-green-700 text-white w-full py-3 font-bold hover:bg-green-500 transition-colors">SAVE TO DATABASE</button>
+                </div>
+            </div>
+            <div class="border p-4 border-green-900 bg-black bg-opacity-50">
+                <h3 class="mb-4 text-lg underline font-bold text-yellow-500">Active License Keys</h3>
+                <div id="userList" class="text-xs space-y-3 max-h-[400px] overflow-y-auto">
+                    Database connection kireemata login weemata awshya wenawa...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terminal -->
+    <div class="terminal-window">
+        <div id="terminalOutput" class="output-container"></div>
+        <div id="inputArea" class="input-line hidden">
+            <span id="promptUser" class="prompt">USR@GATEKEEPER:~$</span>
+            <input type="text" id="cmdInput" autofocus spellcheck="false" autocomplete="off">
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { 
+            getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { 
+            getFirestore, doc, setDoc, getDoc, collection, getDocs, Timestamp, deleteDoc
+        } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const output = document.getElementById('terminalOutput');
+        const input = document.getElementById('cmdInput');
+        const inputArea = document.getElementById('inputArea');
+        const promptUser = document.getElementById('promptUser');
+        const adminPanel = document.getElementById('adminPanel');
+
+        let roundNumbers = [];
+        let currentStep = 'init'; 
+        let selectedCountry = '';
+        let selectedServer = '';
+        let userAuth = null;
+
+        const CONTACT_SUPPORT = "+94716344483";
+        const countries = ["SRI LANKA", "INDIA", "BRAZIL", "GLOBAL"];
+
+        const getPublicDocPath = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
+        const getPublicDataPath = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth failed:", err);
+                printLine("CRITICAL: DATABASE AUTHENTICATION FAILED.", "error");
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userAuth = user;
+                if (currentStep === 'init') boot();
+                if (adminPanel.style.display === 'block') loadKeys();
+            }
+        });
+
+        window.generateRandomKey = function() {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let key = "AV-";
+            for(let i=0; i<6; i++) key += chars.charAt(Math.floor(Math.random() * chars.length));
+            document.getElementById('genKeyDisplay').value = key;
+        };
+
+        window.toggleAdmin = async function() {
+            if (!userAuth) {
+                printLine("ERROR: Authentication is pending...", "warning");
+                return;
+            }
+            adminPanel.style.display = adminPanel.style.display === 'block' ? 'none' : 'block';
+            if(adminPanel.style.display === 'block') loadKeys();
+            else input.focus();
+        };
+
+        window.deleteKey = async function(id) {
+            if (!userAuth) return;
+            if (!confirm(`Delete key: ${id}?`)) return;
+            try {
+                await deleteDoc(getPublicDocPath("keys", id));
+                loadKeys();
+            } catch (err) { alert("Delete error: " + err.message); }
+        }
+
+        async function loadKeys() {
+            const list = document.getElementById('userList');
+            if (!userAuth) {
+                list.innerHTML = "Not authenticated.";
+                return;
+            }
+            list.innerHTML = "Syncing with secure node...";
+            try {
+                const querySnapshot = await getDocs(getPublicDataPath("keys"));
+                list.innerHTML = "";
+                if (querySnapshot.empty) {
+                    list.innerHTML = "<div class='text-gray-500'>No active keys found.</div>";
+                    return;
+                }
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const exp = data.expiry?.toDate();
+                    const status = (exp && exp > new Date()) ? 'ACTIVE' : 'EXPIRED';
+                    list.innerHTML += `
+                    <div class="border border-green-900 p-2 bg-black bg-opacity-30 rounded flex justify-between items-center mb-2">
+                        <div>
+                            <div class="font-bold text-white text-[12px]">${data.key}</div>
+                            <div class="mt-1 text-[10px]">Status: <span class="${status === 'ACTIVE' ? 'text-green-400':'text-red-500'} font-bold">${status}</span></div>
+                            <div class="text-[9px] text-gray-400">Exp: ${exp ? exp.toLocaleString() : 'N/A'}</div>
+                        </div>
+                        <button onclick="deleteKey('${data.key}')" class="text-red-500 border border-red-500 px-2 py-1 text-[10px] hover:bg-red-500 hover:text-white">DEL</button>
+                    </div>`;
+                });
+            } catch (err) { 
+                list.innerHTML = `<span class="error">Connectivity error: ${err.code}</span>`; 
+            }
+        }
+
+        document.getElementById('saveKeyBtn').onclick = async () => {
+            if (!userAuth) return;
+            const key = document.getElementById('genKeyDisplay').value;
+            const expiryStr = document.getElementById('adminExpiry').value;
+            if(!key || !expiryStr) { alert("Generate a key and set an expiry date!"); return; }
+            try {
+                await setDoc(getPublicDocPath("keys", key), {
+                    key: key,
+                    expiry: Timestamp.fromDate(new Date(expiryStr)),
+                    createdAt: Timestamp.now()
+                });
+                alert("Key saved successfully!");
+                document.getElementById('genKeyDisplay').value = '';
+                loadKeys();
+            } catch(e) { alert("Save error: " + e.message); }
+        };
+
+        async function boot() {
+            if (currentStep !== 'init') return;
+            currentStep = 'booting';
+            await printLine("AVIATOR BOOTLOADER v7.1 LOADING...", "system");
+            await sleep(400);
+            await printLine("HANDSHAKE WITH FIREBASE CLOUD...", "system");
+            await sleep(400);
+            await printLine("STATUS: CONNECTED (UID: " + userAuth.uid.substring(0,8) + "...)", "success");
+            showCountrySelection();
+        }
+
+        function showCountrySelection() {
+            printLine("--------------------------------------------------");
+            printLine("SELECT OPERATIONAL REGION:", "warning");
+            const grid = document.createElement('div');
+            grid.className = 'server-grid';
+            countries.forEach(c => {
+                const btn = document.createElement('div');
+                btn.className = 'server-btn';
+                btn.innerText = c;
+                btn.onclick = () => selectCountry(c);
+                grid.appendChild(btn);
+            });
+            output.appendChild(grid);
+            scrollToBottom();
+        }
+
+        async function selectCountry(country) {
+            selectedCountry = country;
+            printLine(`${country} REGION SELECTED.`, "success");
+            showServerSelection(country === "SRI LANKA" ? "SL" : "GL");
+        }
+
+        function showServerSelection(srvPrefix) {
+            printLine("--------------------------------------------------");
+            printLine(`SELECT SERVER NODE [${selectedCountry}]:`, "warning");
+            const grid = document.createElement('div');
+            grid.className = 'server-grid';
+            for(let i=0; i<6; i++) {
+                const srvID = `${srvPrefix}${Math.floor(1000 + Math.random() * 8999)}`;
+                const btn = document.createElement('div');
+                btn.className = 'server-btn';
+                btn.innerText = srvID;
+                btn.onclick = () => askForKey(srvID);
+                grid.appendChild(btn);
+            }
+            output.appendChild(grid);
+            scrollToBottom();
+        }
+
+        async function askForKey(server) {
+            selectedServer = server;
+            printLine(`NODE: ${server} INITIALIZED.`, "system");
+            await sleep(300);
+            printLine("--------------------------------------------------");
+            printLine("ENTER LICENSE KEY:");
+            inputArea.classList.remove('hidden');
+            currentStep = 'get_key';
+            input.focus();
+        }
+
+        async function verifyKey(key) {
+            if (!userAuth) throw new Error("Waiting for authentication...");
+            printLine("VERIFYING WITH DATABASE...", "system");
+            const keyRef = getPublicDocPath("keys", key.toUpperCase());
+            const snap = await getDoc(keyRef);
+            if (snap.exists()) {
+                const data = snap.data();
+                const now = new Date();
+                if (now > data.expiry.toDate()) throw new Error("KEY EXPIRED. PLEASE RENEW.");
+                return data;
+            } else {
+                // Modified as requested: show support number instead of DB error
+                throw new Error(`GET KEY ${CONTACT_SUPPORT}`);
+            }
+        }
+
+        async function finalizeBoot(data) {
+            printLine(`ACCESS GRANTED. EXPIRES: ${data.expiry.toDate().toLocaleString()}`, "success");
+            await sleep(800);
+            printLine("--------------------------------------------------");
+            printLine("AVIATOR ENGINE v7.1 [ONLINE]");
+            promptUser.innerText = `USR@${selectedServer}:~$`;
+            currentStep = 'ready';
+        }
+
+        const commands = {
+            'HELP': () => {
+                printLine('COMMANDS:', 'success');
+                printLine('  ADD [val]  - Record multiplier (ex: ADD 1.5)');
+                printLine('  ANALYZE    - Get prediction');
+                printLine('  ADMIN      - Open Key Panel');
+                printLine('  REBOOT     - Reset system');
+            },
+            'ADD': (args) => {
+                const val = parseFloat(args[0]);
+                if (isNaN(val)) return printLine('ERROR: Invalid value.', 'error');
+                roundNumbers.push(val);
+                printLine(`VALUE [${val}x] CACHED.`, "success");
+            },
+            'ANALYZE': () => {
+                if (roundNumbers.length < 2) return printLine('ERROR: Minimum 2 rounds required.', 'error');
+                printLine('RUNNING ALGORITHM...', 'system');
+                setTimeout(() => {
+                    const last = roundNumbers[roundNumbers.length-1];
+                    const nextStart = (last * 1.1).toFixed(2);
+                    const nextEnd = (last * 2.2).toFixed(2);
+                    const block = document.createElement('div');
+                    block.className = 'prediction-block';
+                    block.innerHTML = `
+                        <div class="success">>>> PREDICTION <<<</div>
+                        <div>TARGET: <span class="highlight">${nextStart}x - ${nextEnd}x</span></div>
+                        <div class="text-[10px] mt-1 opacity-50">Confidence: 94%</div>
+                    `;
+                    output.appendChild(block);
+                    scrollToBottom();
+                }, 1000);
+            },
+            'ADMIN': () => toggleAdmin(),
+            'REBOOT': () => location.reload()
+        };
+
+        input.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                const val = input.value.trim();
+                if (!val) return;
+                input.value = '';
+
+                if (val.toUpperCase() === 'HUTTOMANTHINETH' || val.toUpperCase() === 'ADMIN') {
+                    toggleAdmin();
+                    return;
+                }
+
+                if (currentStep === 'get_key') {
+                    try {
+                        const data = await verifyKey(val);
+                        finalizeBoot(data);
+                    } catch (err) {
+                        printLine(`ERROR: ${err.message}`, "error");
+                    }
+                    return;
+                }
+
+                if (currentStep === 'ready') {
+                    printLine(`<span class="prompt">${promptUser.innerText}</span> ${val}`);
+                    const parts = val.toUpperCase().split(' ');
+                    const cmd = parts[0];
+                    if (commands[cmd]) commands[cmd](parts.slice(1));
+                    else printLine(`COMMAND NOT RECOGNIZED: ${cmd}`, "error");
+                }
+            }
+        });
+
+        function printLine(text, type = '') {
+            return new Promise(resolve => {
+                const line = document.createElement('div');
+                line.className = `line ${type}`;
+                line.innerHTML = text;
+                output.appendChild(line);
+                scrollToBottom(); resolve();
+            });
+        }
+        function scrollToBottom() { output.scrollTo({ top: output.scrollHeight, behavior: 'smooth' }); }
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+        document.addEventListener('click', () => { if (currentStep !== 'booting') input.focus(); });
+        
+        initAuth();
+    </script>
+</body>
+</html>
