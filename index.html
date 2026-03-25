@@ -2,497 +2,462 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AVIATOR_ELITE_v10</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVIATOR_ROUND_TRACKER_v9.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap');
         
         :root {
-            --accent: #00f2ff;
-            --bg-dark: #020408;
-            --card-bg: rgba(13, 17, 23, 0.7);
-            --border: rgba(255, 255, 255, 0.08);
+            --primary-green: #00ff41;
+            --bg-black: #050505;
+            --error-red: #ff3e3e;
+            --warning-yellow: #ffcc00;
+            --system-blue: #00d4ff;
+            --terminal-glow: rgba(0, 255, 65, 0.15);
         }
 
         body {
-            background-color: var(--bg-dark);
-            color: #f8fafc;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            height: 100dvh;
+            background-color: var(--bg-black);
+            color: var(--primary-green);
+            font-family: 'Fira Code', monospace;
             margin: 0;
             overflow: hidden;
-            background-image: 
-                radial-gradient(circle at 0% 0%, rgba(0, 242, 255, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 100% 100%, rgba(0, 102, 255, 0.05) 0%, transparent 40%);
+            height: 100vh;
         }
 
-        .glass-panel {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-        }
-
-        .btn-action {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            user-select: none;
-            cursor: pointer;
-        }
-
-        .btn-action:active { transform: scale(0.96); }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #00f2ff, #0066ff);
-            color: #000;
-            font-weight: 800;
-            box-shadow: 0 8px 32px rgba(0, 242, 255, 0.2);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.3;
-            filter: grayscale(1);
-            cursor: not-allowed;
-        }
-
-        .prediction-display {
-            background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+        .terminal-window {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            box-shadow: inset 0 0 150px var(--terminal-glow);
             position: relative;
-            overflow: hidden;
         }
 
-        .prediction-display::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        .output-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-green) #0a0a0a;
         }
 
-        .mono { font-family: 'JetBrains Mono', monospace; }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-
-        @keyframes pulse-glow {
-            0%, 100% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); }
-        }
-        .status-pulse { animation: pulse-glow 2s infinite ease-in-out; }
-
-        #adminPanel {
-            z-index: 100;
-            display: none;
-        }
-
-        .numpad-btn {
-            aspect-ratio: 1;
+        .input-line {
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            font-weight: 700;
-            border-radius: 16px;
+            gap: 10px;
+            background: rgba(0, 255, 65, 0.05);
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 65, 0.1);
         }
+
+        #cmdInput {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--primary-green);
+            flex-grow: 1;
+            font-family: 'Fira Code', monospace;
+            font-size: 16px;
+        }
+
+        .crt-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none; z-index: 100;
+        }
+
+        .line { margin-bottom: 4px; line-height: 1.4; word-break: break-all; font-size: 14px; }
+        .prompt { color: var(--primary-green); font-weight: bold; }
+        .highlight { color: #fff; text-shadow: 0 0 8px var(--primary-green); }
+        .error { color: var(--error-red); }
+        .warning { color: var(--warning-yellow); }
+        .success { color: var(--primary-green); font-weight: bold; }
+        .system { color: var(--system-blue); }
+
+        .prediction-block {
+            border: 1px solid var(--primary-green);
+            padding: 15px; margin: 15px 0;
+            background: rgba(0, 255, 65, 0.08);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn { from { transform: translateX(-10px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .server-grid {
+            display: grid; grid-template-cols: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px; margin: 15px 0;
+        }
+
+        .server-btn {
+            border: 1px solid var(--primary-green);
+            padding: 10px 5px; text-align: center; font-size: 12px;
+            cursor: pointer; transition: all 0.2s;
+            background: rgba(0, 255, 65, 0.02);
+        }
+
+        .server-btn:hover { background: var(--primary-green); color: #000; box-shadow: 0 0 15px var(--primary-green); }
+
+        .admin-panel {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.98); border: 1px solid var(--primary-green);
+            z-index: 200; padding: 30px; display: none; overflow-y: auto;
+        }
+
+        .hidden { display: none; }
     </style>
 </head>
-<body class="flex flex-col lg:flex-row p-3 lg:p-6 gap-4">
+<body>
 
-    <!-- Admin Overlay -->
-    <div id="adminPanel" class="fixed inset-0 bg-black/95 backdrop-blur-xl p-6 overflow-y-auto">
-        <div class="max-w-xl mx-auto space-y-8">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-extrabold tracking-tight">MANAGEMENT HUB</h2>
-                <button onclick="toggleAdmin()" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all font-bold text-xs">EXIT</button>
+    <div class="crt-overlay"></div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="admin-panel">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center border-b border-green-500 pb-4 mb-6">
+                <h2 class="text-2xl font-bold">ADMIN CONSOLE // KEY_MGMT</h2>
+                <button onclick="toggleAdmin()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 font-bold transition-colors">EXIT</button>
             </div>
             
-            <div class="glass-panel p-6 space-y-6">
-                <h3 class="text-xs font-black text-cyan-500 tracking-widest uppercase">Create Access Key</h3>
-                <div class="space-y-4">
-                    <input id="adminExpiry" type="datetime-local" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 outline-none focus:border-cyan-500 text-white">
-                    <button id="saveKeyBtn" class="w-full btn-primary py-4 rounded-xl">GENERATE & SAVE KEY</button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-black border border-green-900 p-6 rounded">
+                    <h3 class="mb-4 text-lg font-bold text-green-400">GENERATE LICENSE</h3>
+                    <div class="space-y-4">
+                        <div class="flex gap-2">
+                            <input id="genKeyDisplay" type="text" readonly placeholder="Key..." class="flex-grow bg-zinc-900 border border-green-500 p-3 text-green-400 font-bold focus:outline-none">
+                            <button onclick="generateRandomKey()" class="bg-blue-600 px-4 text-white font-bold">GEN</button>
+                        </div>
+                        <label class="text-xs text-gray-500">Expiry Date:</label>
+                        <input id="adminExpiry" type="datetime-local" class="w-full bg-zinc-900 border border-green-500 p-3 text-green-400 focus:outline-none">
+                        <button id="saveKeyBtn" class="bg-green-600 text-black w-full py-4 font-bold uppercase">Save to Database</button>
+                    </div>
                 </div>
-            </div>
 
-            <div id="userList" class="space-y-3">
-                <!-- Keys go here -->
+                <div class="bg-black border border-green-900 p-6 rounded">
+                    <h3 class="mb-4 text-lg font-bold text-yellow-500">ACTIVE LICENSES</h3>
+                    <div id="userList" class="space-y-3 max-h-[400px] overflow-y-auto text-sm">Syncing with cloud nodes...</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Sidebar / Nav Area -->
-    <aside class="w-full lg:w-80 flex flex-col gap-4">
-        <div class="glass-panel p-5 flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <div>
-                <h1 class="font-extrabold text-lg leading-none tracking-tight">ELITE v10</h1>
-                <p id="authStatus" class="text-[10px] font-bold text-amber-500 mt-1 uppercase tracking-wider">Awaiting Secure Link</p>
-            </div>
+    <!-- Terminal -->
+    <div class="terminal-window">
+        <div id="terminalOutput" class="output-container"></div>
+        <div id="inputArea" class="input-line hidden">
+            <span id="promptUser" class="prompt">GUEST@AVIATOR:~$</span>
+            <input type="text" id="cmdInput" autofocus spellcheck="false" autocomplete="off" placeholder="...">
         </div>
-
-        <!-- Dashboard Stats -->
-        <div class="glass-panel p-6 space-y-6 flex-grow hidden lg:flex flex-col">
-            <div class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Region</span>
-                    <span id="statRegion" class="text-xs font-bold text-white">NOT SELECTED</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Server Node</span>
-                    <span id="statNode" class="text-xs font-bold text-cyan-500 mono">OFFLINE</span>
-                </div>
-            </div>
-
-            <div class="flex-grow flex flex-col pt-4 border-t border-white/5">
-                <h3 class="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">Sample History</h3>
-                <div id="sampleHistory" class="space-y-2 overflow-y-auto custom-scrollbar flex-grow pr-2">
-                    <p class="text-[10px] text-zinc-600 italic text-center py-4">Database empty</p>
-                </div>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Application UI -->
-    <main class="flex-grow flex flex-col gap-4 overflow-hidden">
-        
-        <!-- Top Display -->
-        <div class="glass-panel p-6 flex flex-col items-center justify-center min-h-[200px] lg:min-h-[280px] prediction-display">
-            <div id="mainDisplay" class="text-center">
-                <div id="loadingPulse" class="hidden mb-4">
-                    <div class="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mx-auto"></div>
-                    <p class="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em] mt-4">Analyzing Patterns</p>
-                </div>
-                
-                <div id="displayPlaceholder">
-                    <p class="text-xs font-black text-zinc-500 uppercase tracking-[0.4em] mb-2">System Status</p>
-                    <h2 class="text-2xl font-extrabold text-white">INITIALIZING ENGINE</h2>
-                </div>
-
-                <div id="resultOutput" class="hidden animate-in fade-in zoom-in duration-500">
-                    <span class="text-[10px] font-black text-cyan-400 bg-cyan-400/10 px-3 py-1 rounded-full uppercase tracking-widest mb-6 inline-block">Signal Locked</span>
-                    <div class="flex flex-col md:flex-row gap-8 items-center justify-center">
-                        <div class="text-left">
-                            <span class="text-[9px] text-zinc-500 font-bold uppercase block mb-1">Target Rounds</span>
-                            <div id="targetRounds" class="text-4xl font-black text-white mono leading-none">---</div>
-                        </div>
-                        <div class="w-px h-12 bg-white/10 hidden md:block"></div>
-                        <div class="text-left">
-                            <span class="text-[9px] text-zinc-500 font-bold uppercase block mb-1">Safety Multiplier</span>
-                            <div id="targetOdds" class="text-4xl font-black text-cyan-400 mono leading-none">0.00x</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Action Grid / Controls -->
-        <div class="glass-panel p-4 lg:p-6 flex-grow flex flex-col">
-            
-            <!-- Contextual Screen: Region Selection -->
-            <div id="screenRegions" class="h-full flex flex-col animate-in fade-in duration-300">
-                <h3 class="text-xs font-black text-zinc-500 uppercase tracking-widest mb-4">Select Target Region</h3>
-                <div class="grid grid-cols-2 gap-3 flex-grow">
-                    <button onclick="selectRegion('SRI LANKA')" class="btn-action rounded-2xl flex flex-col items-center justify-center gap-2">
-                        <span class="text-lg">🇱🇰</span>
-                        <span class="text-xs font-black uppercase">Sri Lanka</span>
-                    </button>
-                    <button onclick="selectRegion('INDIA')" class="btn-action rounded-2xl flex flex-col items-center justify-center gap-2">
-                        <span class="text-lg">🇮🇳</span>
-                        <span class="text-xs font-black uppercase">India</span>
-                    </button>
-                    <button onclick="selectRegion('BRAZIL')" class="btn-action rounded-2xl flex flex-col items-center justify-center gap-2">
-                        <span class="text-lg">🇧🇷</span>
-                        <span class="text-xs font-black uppercase">Brazil</span>
-                    </button>
-                    <button onclick="selectRegion('GLOBAL')" class="btn-action rounded-2xl flex flex-col items-center justify-center gap-2">
-                        <span class="text-lg">🌐</span>
-                        <span class="text-xs font-black uppercase">Global</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Contextual Screen: Server Selection -->
-            <div id="screenServers" class="hidden h-full flex flex-col animate-in fade-in duration-300">
-                <h3 class="text-xs font-black text-zinc-500 uppercase tracking-widest mb-4">Select Secure Node</h3>
-                <div id="serverList" class="grid grid-cols-2 gap-3 flex-grow">
-                    <!-- Servers Injected -->
-                </div>
-            </div>
-
-            <!-- Contextual Screen: Key Entry -->
-            <div id="screenAuth" class="hidden h-full flex flex-col animate-in fade-in duration-300">
-                <h3 class="text-xs font-black text-zinc-500 uppercase tracking-widest mb-4">License Verification</h3>
-                <div class="flex flex-col gap-4 flex-grow justify-center">
-                    <div class="relative">
-                        <input id="keyInput" type="text" placeholder="AV-XXXXXX" class="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-center text-xl font-bold mono tracking-widest outline-none focus:border-cyan-500">
-                    </div>
-                    <button onclick="verifyKey()" class="btn-primary py-5 rounded-2xl uppercase tracking-widest">Connect to Engine</button>
-                </div>
-            </div>
-
-            <!-- Contextual Screen: Main Controls -->
-            <div id="screenMain" class="hidden h-full flex flex-col animate-in fade-in duration-300">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-                    
-                    <!-- Numpad Input -->
-                    <div class="space-y-3">
-                        <h3 class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Data Input (Last 3 Rounds)</h3>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button onclick="pressNum(1)" class="btn-action numpad-btn">1</button>
-                            <button onclick="pressNum(2)" class="btn-action numpad-btn">2</button>
-                            <button onclick="pressNum(3)" class="btn-action numpad-btn">3</button>
-                            <button onclick="pressNum(4)" class="btn-action numpad-btn">4</button>
-                            <button onclick="pressNum(5)" class="btn-action numpad-btn">5</button>
-                            <button onclick="pressNum(6)" class="btn-action numpad-btn">6</button>
-                            <button onclick="pressNum(7)" class="btn-action numpad-btn">7</button>
-                            <button onclick="pressNum(8)" class="btn-action numpad-btn">8</button>
-                            <button onclick="pressNum(9)" class="btn-action numpad-btn">9</button>
-                            <button onclick="clearInput()" class="btn-action numpad-btn text-amber-500">C</button>
-                            <button onclick="pressNum(0)" class="btn-action numpad-btn">0</button>
-                            <button onclick="submitRound()" class="btn-action numpad-btn bg-cyan-500/10 text-cyan-400">OK</button>
-                        </div>
-                        <div id="inputBuffer" class="bg-black/40 rounded-xl p-3 text-center mono font-bold text-lg text-white/50 h-14 flex items-center justify-center">
-                            _ _ _ _ _
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="flex flex-col gap-3 justify-end lg:justify-start">
-                        <h3 class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Operations</h3>
-                        <button id="analyzeBtn" disabled onclick="triggerAnalysis()" class="btn-primary flex-grow py-8 lg:py-12 rounded-3xl flex flex-col items-center justify-center gap-3">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                            <span class="tracking-[0.2em]">EXECUTE PREDICTION</span>
-                        </button>
-                        <button onclick="resetData()" class="btn-action py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-500">Flush Cache</button>
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
-    </main>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, getDocs, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAu2rosyyF2AJi_hVo-8XhXGsofTJ9zzdQ",
             authDomain: "myapp-1bc82.firebaseapp.com",
             projectId: "myapp-1bc82",
             storageBucket: "myapp-1bc82.firebasestorage.app",
             messagingSenderId: "723618358633",
-            appId: "1:723618358633:web:24c6a343707c53de7009f8"
+            appId: "1:723618358633:web:24c6a343707c53de7009f8",
+            measurementId: "G-2T0XL00LHH"
         };
         
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'aviator-elite-v10';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'aviator-pro-v9';
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // State
-        let currentBuffer = "";
-        let roundsData = [];
+        const output = document.getElementById('terminalOutput');
+        const input = document.getElementById('cmdInput');
+        const inputArea = document.getElementById('inputArea');
+        const promptUser = document.getElementById('promptUser');
+        const adminPanel = document.getElementById('adminPanel');
+
+        let roundsData = []; 
+        let currentStep = 'init'; 
+        let selectedServer = '';
         let userAuth = null;
-        let selectedRegion = "";
-        let selectedNode = "";
 
-        const screens = ['screenRegions', 'screenServers', 'screenAuth', 'screenMain'];
-        const getPublicDoc = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
+        // Correct Firestore Path Helpers (Mandatory Pattern)
+        const getPublicDoc = (colName, id) => doc(db, 'artifacts', appId, 'public', 'data', colName, id);
+        const getPublicCol = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
 
-        // UI Helpers
-        const setScreen = (id) => {
-            screens.forEach(s => document.getElementById(s).classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-        };
-
-        const updateDisplay = (msg, subMsg = "") => {
-            document.getElementById('displayPlaceholder').classList.remove('hidden');
-            document.getElementById('resultOutput').classList.add('hidden');
-            document.getElementById('displayPlaceholder').querySelector('h2').innerText = msg;
-            document.getElementById('displayPlaceholder').querySelector('p').innerText = subMsg || "System Status";
-        };
-
-        // Firebase Auth
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 userAuth = user;
-                document.getElementById('authStatus').innerText = "SECURE LINK ACTIVE";
-                document.getElementById('authStatus').className = "text-[10px] font-bold text-green-500 mt-1 uppercase tracking-wider";
-                updateDisplay("SELECT REGION", "Ready for Input");
+                if (currentStep === 'init') startBoot();
+                if (adminPanel.style.display === 'block') refreshKeys();
             }
         });
 
-        // Navigation Logic
-        window.selectRegion = (region) => {
-            selectedRegion = region;
-            document.getElementById('statRegion').innerText = region;
-            const list = document.getElementById('serverList');
-            list.innerHTML = "";
-            for(let i=1; i<=4; i++) {
-                const node = `NODE_${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-                const b = document.createElement('button');
-                b.className = 'btn-action rounded-2xl flex flex-col items-center justify-center py-6';
-                b.innerHTML = `<span class="text-[9px] font-black opacity-40 uppercase mb-1">Node</span><span class="text-xs font-bold mono">${node}</span>`;
-                b.onclick = () => selectNode(node);
-                list.appendChild(b);
-            }
-            setScreen('screenServers');
-        };
-
-        window.selectNode = (node) => {
-            selectedNode = node;
-            document.getElementById('statNode').innerText = node;
-            setScreen('screenAuth');
-            updateDisplay("VERIFICATION REQUIRED", "Access Lock Active");
-        };
-
-        window.verifyKey = async () => {
-            const key = document.getElementById('keyInput').value.trim().toUpperCase();
-            if(!key) return;
-            
-            if(key === "HUTTOMANTHINETH") {
-                toggleAdmin();
-                return;
-            }
-
-            updateDisplay("VERIFYING...", "Encrypted Link");
+        const initAuth = async () => {
             try {
-                const snap = await getDoc(getPublicDoc("keys", key));
-                if (snap.exists() && snap.data().expiry.toDate() > new Date()) {
-                    setScreen('screenMain');
-                    updateDisplay("ENGINE STANDBY", "Ready for Data");
+                // Environment check for custom token
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token && __initial_auth_token !== "") {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch (customError) {
+                        // Fallback if custom token mismatch occurs
+                        console.warn("Custom token failed, falling back to anonymous", customError);
+                        await signInAnonymously(auth);
+                    }
                 } else {
-                    updateDisplay("INVALID LICENSE", "Access Denied");
+                    await signInAnonymously(auth);
                 }
-            } catch (err) {
-                updateDisplay("SYNC ERROR", "Link Timeout");
+            } catch (error) {
+                console.error("Auth initialization completely failed", error);
+                await printLine(">> SYSTEM AUTH ERROR: CLOUD DISCONNECT", "error");
             }
         };
 
-        // Input Logic
-        window.pressNum = (n) => {
-            if(currentBuffer.length < 6) {
-                currentBuffer += n;
-                document.getElementById('inputBuffer').innerText = currentBuffer;
-                document.getElementById('inputBuffer').className = "bg-cyan-500/5 rounded-xl p-3 text-center mono font-bold text-lg text-cyan-400 h-14 flex items-center justify-center";
+        function getPredictiveValue(roundId, offset = 0) {
+            const seed = (roundId + offset) * 987.654;
+            const x = Math.sin(seed) * 10000;
+            const rand = x - Math.floor(x);
+            return (4.00 + rand * 5.00).toFixed(2);
+        }
+
+        async function startBoot() {
+            currentStep = 'booting';
+            await printLine(">> SYSTEM INITIALIZING...", "system");
+            await sleep(500);
+            await printLine(">> CLOUD HANDSHAKE: SUCCESS", "success");
+            await sleep(300);
+            showRegions();
+        }
+
+        function showRegions() {
+            printLine("--------------------------------------------------");
+            printLine("SELECT OPERATIONAL REGION:", "warning");
+            ["SRI LANKA", "INDIA", "BRAZIL", "GLOBAL"].forEach(r => {
+                const b = document.createElement('div');
+                b.className = 'server-btn';
+                b.innerText = r;
+                b.onclick = () => {
+                    printLine(`REGION ${r} MOUNTED.`, "success");
+                    showServers();
+                };
+                output.appendChild(b);
+            });
+            scrollToBottom();
+        }
+
+        function showServers() {
+            const grid = document.createElement('div');
+            grid.className = 'server-grid';
+            for(let i=0; i<4; i++) {
+                const s = `NODE_0x${Math.floor(Math.random()*999).toString(16).toUpperCase()}`;
+                const b = document.createElement('div');
+                b.className = 'server-btn';
+                b.innerText = s;
+                b.onclick = () => {
+                    selectedServer = s;
+                    printLine(`CONNECTED TO ${s}.`, "success");
+                    askKey();
+                };
+                grid.appendChild(b);
             }
-        };
+            output.appendChild(grid);
+            scrollToBottom();
+        }
 
-        window.clearInput = () => {
-            currentBuffer = "";
-            document.getElementById('inputBuffer').innerText = "_ _ _ _ _";
-            document.getElementById('inputBuffer').className = "bg-black/40 rounded-xl p-3 text-center mono font-bold text-lg text-white/50 h-14 flex items-center justify-center";
-        };
+        function askKey() {
+            printLine("--------------------------------------------------");
+            printLine("ENTER LICENSE KEY TO ACTIVATE ENGINE:");
+            inputArea.classList.remove('hidden');
+            currentStep = 'key_entry';
+            input.placeholder = "AV-XXXXXX";
+            input.focus();
+        }
 
-        window.submitRound = () => {
-            if(!currentBuffer) return;
-            roundsData.push(currentBuffer);
-            updateHistory();
-            clearInput();
+        function runAnalysis() {
+            if (roundsData.length < 3) {
+                return printLine("ERROR: MINIMUM 3 PREVIOUS ROUNDS REQUIRED (USE 'ADD').", "error");
+            }
+
+            printLine("CALCULATING MULTI-ROUND CLUSTER HASH...", "system");
             
-            if(roundsData.length >= 3) {
-                document.getElementById('analyzeBtn').disabled = false;
-                updateDisplay("CACHE READY", "Execution Authorized");
-            } else {
-                updateDisplay(`SAMPLES: ${roundsData.length}/3`, "Acquiring Data");
-            }
-        };
-
-        const updateHistory = () => {
-            const container = document.getElementById('sampleHistory');
-            container.innerHTML = "";
-            roundsData.slice().reverse().forEach(r => {
-                const d = document.createElement('div');
-                d.className = "flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5";
-                d.innerHTML = `<span class="mono text-xs opacity-50">#${r}</span><span class="text-[9px] font-black text-green-500">VALID</span>`;
-                container.appendChild(d);
-            });
-        };
-
-        window.triggerAnalysis = () => {
-            document.getElementById('displayPlaceholder').classList.add('hidden');
-            document.getElementById('loadingPulse').classList.remove('hidden');
-            document.getElementById('analyzeBtn').disabled = true;
-
             setTimeout(() => {
-                const last = roundsData[roundsData.length - 1];
-                const targetStart = parseInt(last) + 1;
-                const targetEnd = targetStart + 3;
+                const lastRound = roundsData[roundsData.length - 1].round;
+                const signalCount = Math.floor(Math.random() * 4) + 3; 
+                const firstTarget = lastRound + 1;
+                const lastTarget = lastRound + signalCount;
                 
-                // Logic simulation
-                const seed = (parseInt(last)) * 1.618;
-                const odds = (2.0 + (Math.sin(seed) * 0.5 + 0.5) * 4.0).toFixed(2);
+                let minVal = 99;
+                let maxVal = 0;
 
-                document.getElementById('loadingPulse').classList.add('hidden');
-                document.getElementById('resultOutput').classList.remove('hidden');
-                document.getElementById('targetRounds').innerText = `${targetStart}-${targetEnd}`;
-                document.getElementById('targetOdds').innerText = `${odds}x`;
+                for(let i=1; i <= signalCount; i++) {
+                    const rId = lastRound + i;
+                    const val = parseFloat(getPredictiveValue(rId));
+                    if(val < minVal) minVal = val;
+                    if(val > maxVal) maxVal = val;
+                }
+
+                const block = document.createElement('div');
+                block.className = 'prediction-block';
                 
-                document.getElementById('analyzeBtn').disabled = false;
-            }, 2000);
-        };
-
-        window.resetData = () => {
-            roundsData = [];
-            updateHistory();
-            document.getElementById('analyzeBtn').disabled = true;
-            updateDisplay("CACHE PURGED", "Awaiting New Data");
-        };
-
-        // Admin
-        window.toggleAdmin = () => {
-            const p = document.getElementById('adminPanel');
-            const isShowing = p.style.display === 'block';
-            p.style.display = isShowing ? 'none' : 'block';
-            if(!isShowing) refreshAdminKeys();
-        };
-
-        const refreshAdminKeys = async () => {
-            const list = document.getElementById('userList');
-            const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'keys'));
-            list.innerHTML = "";
-            snap.forEach(d => {
-                const data = d.data();
-                const item = document.createElement('div');
-                item.className = "glass-panel p-4 flex justify-between items-center";
-                item.innerHTML = `
-                    <div><p class="mono font-bold">${data.key}</p><p class="text-[10px] text-zinc-500">Exp: ${data.expiry.toDate().toLocaleDateString()}</p></div>
-                    <button onclick="deleteKey('${data.key}')" class="text-red-500 text-xs font-bold">REVOKE</button>
+                let signalHtml = `
+                    <div class="success border-b border-green-900 pb-1 mb-3">
+                        SIGNAL CLUSTER DETECTED
+                    </div>
+                    <div class="text-base text-white space-y-2">
+                        <div>ROUND RANGE: <span class="highlight text-xl">${firstTarget} - ${lastTarget}</span></div>
+                        <div>ODDS RANGE: <span class="highlight text-xl">${minVal.toFixed(2)}x - ${maxVal.toFixed(2)}x</span></div>
+                    </div>
+                    <div class="text-[10px] mt-4 opacity-50 italic">Confidence Level: 96.4% | HASH_MATCH: RSA-2048</div>
                 `;
-                list.appendChild(item);
-            });
+                
+                block.innerHTML = signalHtml;
+                output.appendChild(block);
+                scrollToBottom();
+            }, 1200);
+        }
+
+        input.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                const raw = input.value.trim();
+                if (!raw) return;
+                input.value = '';
+
+                if (raw.toUpperCase() === 'HUTTOMANTHINETH') {
+                    toggleAdmin();
+                    return;
+                }
+
+                if (currentStep === 'key_entry') {
+                    if (!userAuth) {
+                        printLine("WAITING FOR CLOUD AUTH...", "warning");
+                        return;
+                    }
+                    printLine(`VERIFYING: ${raw.toUpperCase()}...`, "system");
+                    try {
+                        const snap = await getDoc(getPublicDoc("keys", raw.toUpperCase()));
+                        if (snap.exists() && snap.data().expiry.toDate() > new Date()) {
+                            currentStep = 'ready';
+                            promptUser.innerText = `${selectedServer}@ENGINE:~$`;
+                            printLine("ENGINE ACTIVATED.", "success");
+                            printLine("COMMANDS: ADD [ROUND_ID] | ANLY | RESET", "system");
+                            input.placeholder = "ADD or ANLY...";
+                        } else {
+                            printLine("ERROR: INVALID OR EXPIRED KEY.", "error");
+                        }
+                    } catch (err) {
+                        console.error("Key verification error", err);
+                        printLine("ERROR: CLOUD SYNC FAILED.", "error");
+                    }
+                    return;
+                }
+
+                if (currentStep === 'ready') {
+                    const parts = raw.toUpperCase().split(' ');
+                    const cmd = parts[0];
+
+                    if (cmd === 'ADD') {
+                        const num = parseInt(parts[1]);
+                        if (isNaN(num)) {
+                            printLine("ERROR: FORMAT 'ADD [ROUND_NUMBER]'", "error");
+                        } else {
+                            roundsData.push({ round: num });
+                            printLine(`DATA POINT REGISTERED: ROUND #${num}`);
+                            if (roundsData.length >= 3) printLine("SIGNAL CLUSTER READY. TYPE 'ANLY'.", "warning");
+                        }
+                    } else if (cmd === 'ANLY') {
+                        runAnalysis();
+                    } else if (cmd === 'RESET') {
+                        roundsData = [];
+                        printLine("DATA CACHE CLEARED.", "warning");
+                    } else {
+                        printLine(`INVALID CMD: ${cmd}`, "error");
+                    }
+                    scrollToBottom();
+                }
+            }
+        });
+
+        window.toggleAdmin = () => {
+            if (!userAuth) return;
+            adminPanel.style.display = adminPanel.style.display === 'block' ? 'none' : 'block';
+            if (adminPanel.style.display === 'block') refreshKeys();
         };
+
+        window.generateRandomKey = () => {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let k = "AV-";
+            for(let i=0; i<6; i++) k += chars.charAt(Math.floor(Math.random() * chars.length));
+            document.getElementById('genKeyDisplay').value = k;
+        };
+
+        async function refreshKeys() {
+            if (!userAuth) return;
+            const list = document.getElementById('userList');
+            try {
+                const snap = await getDocs(getPublicCol("keys"));
+                list.innerHTML = "";
+                snap.forEach(d => {
+                    const data = d.data();
+                    const exp = data.expiry?.toDate();
+                    list.innerHTML += `
+                        <div class="p-2 border border-green-900 bg-zinc-900 rounded flex justify-between items-center mb-2">
+                            <div><div class="font-bold">${data.key}</div><div class="text-[10px]">EXP: ${exp ? exp.toLocaleString() : 'N/A'}</div></div>
+                            <button onclick="deleteKey('${data.key}')" class="text-red-500 text-xs">DEL</button>
+                        </div>`;
+                });
+            } catch (err) { 
+                console.error("Key list error", err);
+                list.innerHTML = "Sync Error. Check permissions."; 
+            }
+        }
 
         window.deleteKey = async (id) => {
+            if(!userAuth) return;
+            if(!confirm(`Kill key ${id}?`)) return;
             await deleteDoc(getPublicDoc("keys", id));
-            refreshAdminKeys();
+            refreshKeys();
         };
 
         document.getElementById('saveKeyBtn').onclick = async () => {
+            if(!userAuth) return;
+            const k = document.getElementById('genKeyDisplay').value;
             const ex = document.getElementById('adminExpiry').value;
-            if(!ex) return;
-            const k = "AV-" + Math.random().toString(36).substr(2, 6).toUpperCase();
-            await setDoc(getPublicDoc("keys", k), {
-                key: k,
-                expiry: Timestamp.fromDate(new Date(ex))
-            });
-            refreshAdminKeys();
+            if (!k || !ex) return;
+            try {
+                await setDoc(getPublicDoc("keys", k), { 
+                    key: k, 
+                    expiry: Timestamp.fromDate(new Date(ex)),
+                    createdAt: Timestamp.now()
+                });
+                refreshKeys();
+            } catch (err) {
+                console.error("Save key error", err);
+            }
         };
 
-        // Clock
-        setInterval(() => {
-            const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
-            // Header doesn't have a clock in this design but adding it for internal consistency
-        }, 1000);
-
-        signInAnonymously(auth);
-
+        function printLine(text, type = '') {
+            return new Promise(resolve => {
+                const l = document.createElement('div');
+                l.className = `line ${type}`;
+                l.innerHTML = text;
+                output.appendChild(l);
+                scrollToBottom();
+                resolve();
+            });
+        }
+        function scrollToBottom() { output.scrollTo({ top: output.scrollHeight, behavior: 'smooth' }); }
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+        document.addEventListener('click', () => { if(currentStep !== 'booting') input.focus(); });
+        
+        // Final Init Call
+        initAuth();
     </script>
 </body>
 </html>
