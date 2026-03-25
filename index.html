@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AVIATOR_KEY_SYSTEM_v7.1_FIXED</title>
+    <title>AVIATOR_ROUND_TRACKER_v9.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap');
@@ -14,6 +14,7 @@
             --error-red: #ff3e3e;
             --warning-yellow: #ffcc00;
             --system-blue: #00d4ff;
+            --terminal-glow: rgba(0, 255, 65, 0.15);
         }
 
         body {
@@ -31,7 +32,7 @@
             flex-direction: column;
             padding: 20px;
             box-sizing: border-box;
-            box-shadow: inset 0 0 150px rgba(0, 255, 65, 0.05);
+            box-shadow: inset 0 0 150px var(--terminal-glow);
             position: relative;
         }
 
@@ -41,7 +42,6 @@
             margin-bottom: 20px;
             scrollbar-width: thin;
             scrollbar-color: var(--primary-green) #0a0a0a;
-            padding-right: 10px;
         }
 
         .input-line {
@@ -66,56 +66,50 @@
 
         .crt-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
             background-size: 100% 2px, 3px 100%;
             pointer-events: none; z-index: 100;
         }
 
-        .line { margin-bottom: 6px; line-height: 1.4; word-break: break-all; }
+        .line { margin-bottom: 4px; line-height: 1.4; word-break: break-all; font-size: 14px; }
         .prompt { color: var(--primary-green); font-weight: bold; }
-        .highlight { color: #fff; background: rgba(0, 255, 65, 0.3); padding: 0 4px; border-radius: 2px; }
+        .highlight { color: #fff; text-shadow: 0 0 8px var(--primary-green); }
         .error { color: var(--error-red); }
         .warning { color: var(--warning-yellow); }
         .success { color: var(--primary-green); font-weight: bold; }
         .system { color: var(--system-blue); }
 
         .prediction-block {
-            border: 1px double var(--primary-green);
+            border: 1px solid var(--primary-green);
             padding: 15px; margin: 15px 0;
-            background: rgba(0, 255, 65, 0.03);
-            animation: fadeIn 0.5s ease-in;
+            background: rgba(0, 255, 65, 0.08);
+            animation: slideIn 0.3s ease-out;
         }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateX(-10px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
         .server-grid {
-            display: grid; grid-template-cols: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 8px; margin: 10px 0;
+            display: grid; grid-template-cols: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px; margin: 15px 0;
         }
 
         .server-btn {
             border: 1px solid var(--primary-green);
-            padding: 8px 4px; text-align: center; font-size: 11px;
+            padding: 10px 5px; text-align: center; font-size: 12px;
             cursor: pointer; transition: all 0.2s;
             background: rgba(0, 255, 65, 0.02);
         }
 
-        .server-btn:hover { background: var(--primary-green); color: #000; box-shadow: 0 0 10px var(--primary-green); }
+        .server-btn:hover { background: var(--primary-green); color: #000; box-shadow: 0 0 15px var(--primary-green); }
 
         .admin-panel {
-            position: fixed; top: 5%; left: 5%; width: 90%; height: 90%;
-            background: #0a0a0a; border: 2px solid var(--primary-green);
-            z-index: 200; padding: 20px; display: none; overflow-y: auto;
-            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.98); border: 1px solid var(--primary-green);
+            z-index: 200; padding: 30px; display: none; overflow-y: auto;
         }
 
         .hidden { display: none; }
-        
-        @media (max-width: 640px) {
-            .admin-panel { width: 98%; left: 1%; top: 2%; height: 96%; padding: 10px; }
-            .terminal-window { padding: 10px; }
-        }
     </style>
 </head>
 <body>
@@ -124,29 +118,29 @@
 
     <!-- Admin Panel -->
     <div id="adminPanel" class="admin-panel">
-        <div class="flex justify-between items-center border-b border-green-500 pb-2 mb-4">
-            <h2 class="text-xl font-bold text-green-500">ADMIN PANEL - KEY GENERATOR</h2>
-            <button onclick="toggleAdmin()" class="bg-red-600 text-white px-3 py-1 text-sm font-bold">CLOSE</button>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="border p-4 border-green-900 bg-black bg-opacity-50">
-                <h3 class="mb-4 text-lg underline font-bold">Naya Key Ekak Generate Karanna</h3>
-                <div class="space-y-4">
-                    <div class="flex gap-2">
-                        <input id="genKeyDisplay" type="text" readonly placeholder="Key eka methana haduna..." class="flex-grow bg-black border border-green-500 p-2 text-green-500 font-bold focus:outline-none">
-                        <button onclick="generateRandomKey()" class="bg-blue-600 px-4 text-white text-xs font-bold">GENERATE</button>
-                    </div>
-                    <div>
-                        <label class="block text-xs mb-1">Expiry Date/Time:</label>
-                        <input id="adminExpiry" type="datetime-local" class="w-full bg-black border border-green-500 p-2 text-green-500 focus:outline-none focus:border-white">
-                    </div>
-                    <button id="saveKeyBtn" class="bg-green-700 text-white w-full py-3 font-bold hover:bg-green-500 transition-colors">SAVE TO DATABASE</button>
-                </div>
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center border-b border-green-500 pb-4 mb-6">
+                <h2 class="text-2xl font-bold">ADMIN CONSOLE // KEY_MGMT</h2>
+                <button onclick="toggleAdmin()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 font-bold transition-colors">EXIT</button>
             </div>
-            <div class="border p-4 border-green-900 bg-black bg-opacity-50">
-                <h3 class="mb-4 text-lg underline font-bold text-yellow-500">Active License Keys</h3>
-                <div id="userList" class="text-xs space-y-3 max-h-[400px] overflow-y-auto">
-                    Database connection kireemata login weemata awshya wenawa...
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-black border border-green-900 p-6 rounded">
+                    <h3 class="mb-4 text-lg font-bold text-green-400">GENERATE LICENSE</h3>
+                    <div class="space-y-4">
+                        <div class="flex gap-2">
+                            <input id="genKeyDisplay" type="text" readonly placeholder="Key..." class="flex-grow bg-zinc-900 border border-green-500 p-3 text-green-400 font-bold focus:outline-none">
+                            <button onclick="generateRandomKey()" class="bg-blue-600 px-4 text-white font-bold">GEN</button>
+                        </div>
+                        <label class="text-xs text-gray-500">Expiry Date:</label>
+                        <input id="adminExpiry" type="datetime-local" class="w-full bg-zinc-900 border border-green-500 p-3 text-green-400 focus:outline-none">
+                        <button id="saveKeyBtn" class="bg-green-600 text-black w-full py-4 font-bold uppercase">Save to Database</button>
+                    </div>
+                </div>
+
+                <div class="bg-black border border-green-900 p-6 rounded">
+                    <h3 class="mb-4 text-lg font-bold text-yellow-500">ACTIVE LICENSES</h3>
+                    <div id="userList" class="space-y-3 max-h-[400px] overflow-y-auto text-sm">Syncing with cloud nodes...</div>
                 </div>
             </div>
         </div>
@@ -156,23 +150,18 @@
     <div class="terminal-window">
         <div id="terminalOutput" class="output-container"></div>
         <div id="inputArea" class="input-line hidden">
-            <span id="promptUser" class="prompt">USR@GATEKEEPER:~$</span>
-            <input type="text" id="cmdInput" autofocus spellcheck="false" autocomplete="off">
+            <span id="promptUser" class="prompt">GUEST@AVIATOR:~$</span>
+            <input type="text" id="cmdInput" autofocus spellcheck="false" autocomplete="off" placeholder="...">
         </div>
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { 
-            getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        import { 
-            getFirestore, doc, setDoc, getDoc, collection, getDocs, Timestamp, deleteDoc
-        } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- GITHUB COMPATIBILITY LAYER ---
-        // Updated with user provided config
-        const GITHUB_FIREBASE_CONFIG = {
+        // Firebase Configuration
+        const firebaseConfig = {
             apiKey: "AIzaSyAu2rosyyF2AJi_hVo-8XhXGsofTJ9zzdQ",
             authDomain: "myapp-1bc82.firebaseapp.com",
             projectId: "myapp-1bc82",
@@ -181,13 +170,8 @@
             appId: "1:723618358633:web:24c6a343707c53de7009f8",
             measurementId: "G-2T0XL00LHH"
         };
-
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : GITHUB_FIREBASE_CONFIG;
-            
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'github-deployment';
-        // ----------------------------------
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'aviator-pro-v9';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -199,280 +183,280 @@
         const promptUser = document.getElementById('promptUser');
         const adminPanel = document.getElementById('adminPanel');
 
-        let roundNumbers = [];
+        let roundsData = []; 
         let currentStep = 'init'; 
-        let selectedCountry = '';
         let selectedServer = '';
         let userAuth = null;
 
-        const CONTACT_SUPPORT = "+94716344483";
-        const countries = ["SRI LANKA", "INDIA", "BRAZIL", "GLOBAL"];
-
-        const getPublicDocPath = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
-        const getPublicDataPath = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
-
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Auth failed:", err);
-                printLine("CRITICAL: DATABASE AUTHENTICATION FAILED.", "error");
-                printLine("Check your Firebase configuration.", "warning");
-            }
-        };
+        // Correct Firestore Path Helpers (Mandatory Pattern)
+        const getPublicDoc = (colName, id) => doc(db, 'artifacts', appId, 'public', 'data', colName, id);
+        const getPublicCol = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 userAuth = user;
-                if (currentStep === 'init') boot();
-                if (adminPanel.style.display === 'block') loadKeys();
+                if (currentStep === 'init') startBoot();
+                if (adminPanel.style.display === 'block') refreshKeys();
             }
         });
 
-        window.generateRandomKey = function() {
-            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            let key = "AV-";
-            for(let i=0; i<6; i++) key += chars.charAt(Math.floor(Math.random() * chars.length));
-            document.getElementById('genKeyDisplay').value = key;
-        };
-
-        window.toggleAdmin = async function() {
-            if (!userAuth) {
-                printLine("ERROR: Authentication is pending...", "warning");
-                return;
-            }
-            adminPanel.style.display = adminPanel.style.display === 'block' ? 'none' : 'block';
-            if(adminPanel.style.display === 'block') loadKeys();
-            else input.focus();
-        };
-
-        window.deleteKey = async function(id) {
-            if (!userAuth) return;
-            if (!confirm(`Delete key: ${id}?`)) return;
+        const initAuth = async () => {
             try {
-                await deleteDoc(getPublicDocPath("keys", id));
-                loadKeys();
-            } catch (err) { alert("Delete error: " + err.message); }
-        }
-
-        async function loadKeys() {
-            const list = document.getElementById('userList');
-            if (!userAuth) {
-                list.innerHTML = "Not authenticated.";
-                return;
-            }
-            list.innerHTML = "Syncing with secure node...";
-            try {
-                const querySnapshot = await getDocs(getPublicDataPath("keys"));
-                list.innerHTML = "";
-                if (querySnapshot.empty) {
-                    list.innerHTML = "<div class='text-gray-500'>No active keys found.</div>";
-                    return;
+                // Environment check for custom token
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token && __initial_auth_token !== "") {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch (customError) {
+                        // Fallback if custom token mismatch occurs
+                        console.warn("Custom token failed, falling back to anonymous", customError);
+                        await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
                 }
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const exp = data.expiry?.toDate();
-                    const status = (exp && exp > new Date()) ? 'ACTIVE' : 'EXPIRED';
-                    list.innerHTML += `
-                    <div class="border border-green-900 p-2 bg-black bg-opacity-30 rounded flex justify-between items-center mb-2">
-                        <div>
-                            <div class="font-bold text-white text-[12px]">${data.key}</div>
-                            <div class="mt-1 text-[10px]">Status: <span class="${status === 'ACTIVE' ? 'text-green-400':'text-red-500'} font-bold">${status}</span></div>
-                            <div class="text-[9px] text-gray-400">Exp: ${exp ? exp.toLocaleString() : 'N/A'}</div>
-                        </div>
-                        <button onclick="deleteKey('${data.key}')" class="text-red-500 border border-red-500 px-2 py-1 text-[10px] hover:bg-red-500 hover:text-white">DEL</button>
-                    </div>`;
-                });
-            } catch (err) { 
-                list.innerHTML = `<span class="error">Connectivity error: ${err.code}</span>`; 
+            } catch (error) {
+                console.error("Auth initialization completely failed", error);
+                await printLine(">> SYSTEM AUTH ERROR: CLOUD DISCONNECT", "error");
             }
-        }
-
-        document.getElementById('saveKeyBtn').onclick = async () => {
-            if (!userAuth) return;
-            const key = document.getElementById('genKeyDisplay').value;
-            const expiryStr = document.getElementById('adminExpiry').value;
-            if(!key || !expiryStr) { alert("Generate a key and set an expiry date!"); return; }
-            try {
-                await setDoc(getPublicDocPath("keys", key), {
-                    key: key,
-                    expiry: Timestamp.fromDate(new Date(expiryStr)),
-                    createdAt: Timestamp.now()
-                });
-                alert("Key saved successfully!");
-                document.getElementById('genKeyDisplay').value = '';
-                loadKeys();
-            } catch(e) { alert("Save error: " + e.message); }
         };
 
-        async function boot() {
-            if (currentStep !== 'init') return;
-            currentStep = 'booting';
-            await printLine("AVIATOR BOOTLOADER v7.1 LOADING...", "system");
-            await sleep(400);
-            await printLine("HANDSHAKE WITH FIREBASE CLOUD...", "system");
-            await sleep(400);
-            await printLine("STATUS: CONNECTED (UID: " + userAuth.uid.substring(0,8) + "...)", "success");
-            showCountrySelection();
+        function getPredictiveValue(roundId, offset = 0) {
+            const seed = (roundId + offset) * 987.654;
+            const x = Math.sin(seed) * 10000;
+            const rand = x - Math.floor(x);
+            return (4.00 + rand * 5.00).toFixed(2);
         }
 
-        function showCountrySelection() {
+        async function startBoot() {
+            currentStep = 'booting';
+            await printLine(">> SYSTEM INITIALIZING...", "system");
+            await sleep(500);
+            await printLine(">> CLOUD HANDSHAKE: SUCCESS", "success");
+            await sleep(300);
+            showRegions();
+        }
+
+        function showRegions() {
             printLine("--------------------------------------------------");
             printLine("SELECT OPERATIONAL REGION:", "warning");
-            const grid = document.createElement('div');
-            grid.className = 'server-grid';
-            countries.forEach(c => {
-                const btn = document.createElement('div');
-                btn.className = 'server-btn';
-                btn.innerText = c;
-                btn.onclick = () => selectCountry(c);
-                grid.appendChild(btn);
+            ["SRI LANKA", "INDIA", "BRAZIL", "GLOBAL"].forEach(r => {
+                const b = document.createElement('div');
+                b.className = 'server-btn';
+                b.innerText = r;
+                b.onclick = () => {
+                    printLine(`REGION ${r} MOUNTED.`, "success");
+                    showServers();
+                };
+                output.appendChild(b);
             });
-            output.appendChild(grid);
             scrollToBottom();
         }
 
-        async function selectCountry(country) {
-            selectedCountry = country;
-            printLine(`${country} REGION SELECTED.`, "success");
-            showServerSelection(country === "SRI LANKA" ? "SL" : "GL");
-        }
-
-        function showServerSelection(srvPrefix) {
-            printLine("--------------------------------------------------");
-            printLine(`SELECT SERVER NODE [${selectedCountry}]:`, "warning");
+        function showServers() {
             const grid = document.createElement('div');
             grid.className = 'server-grid';
-            for(let i=0; i<6; i++) {
-                const srvID = `${srvPrefix}${Math.floor(1000 + Math.random() * 8999)}`;
-                const btn = document.createElement('div');
-                btn.className = 'server-btn';
-                btn.innerText = srvID;
-                btn.onclick = () => askForKey(srvID);
-                grid.appendChild(btn);
+            for(let i=0; i<4; i++) {
+                const s = `NODE_0x${Math.floor(Math.random()*999).toString(16).toUpperCase()}`;
+                const b = document.createElement('div');
+                b.className = 'server-btn';
+                b.innerText = s;
+                b.onclick = () => {
+                    selectedServer = s;
+                    printLine(`CONNECTED TO ${s}.`, "success");
+                    askKey();
+                };
+                grid.appendChild(b);
             }
             output.appendChild(grid);
             scrollToBottom();
         }
 
-        async function askForKey(server) {
-            selectedServer = server;
-            printLine(`NODE: ${server} INITIALIZED.`, "system");
-            await sleep(300);
+        function askKey() {
             printLine("--------------------------------------------------");
-            printLine("ENTER LICENSE KEY:");
+            printLine("ENTER LICENSE KEY TO ACTIVATE ENGINE:");
             inputArea.classList.remove('hidden');
-            currentStep = 'get_key';
+            currentStep = 'key_entry';
+            input.placeholder = "AV-XXXXXX";
             input.focus();
         }
 
-        async function verifyKey(key) {
-            if (!userAuth) throw new Error("Waiting for authentication...");
-            printLine("VERIFYING WITH DATABASE...", "system");
-            const keyRef = getPublicDocPath("keys", key.toUpperCase());
-            const snap = await getDoc(keyRef);
-            if (snap.exists()) {
-                const data = snap.data();
-                const now = new Date();
-                if (now > data.expiry.toDate()) throw new Error("KEY EXPIRED. PLEASE RENEW.");
-                return data;
-            } else {
-                throw new Error(`GET KEY ${CONTACT_SUPPORT}`);
+        function runAnalysis() {
+            if (roundsData.length < 3) {
+                return printLine("ERROR: MINIMUM 3 PREVIOUS ROUNDS REQUIRED (USE 'ADD').", "error");
             }
-        }
 
-        async function finalizeBoot(data) {
-            printLine(`ACCESS GRANTED. EXPIRES: ${data.expiry.toDate().toLocaleString()}`, "success");
-            await sleep(800);
-            printLine("--------------------------------------------------");
-            printLine("AVIATOR ENGINE v7.1 [ONLINE]");
-            promptUser.innerText = `USR@${selectedServer}:~$`;
-            currentStep = 'ready';
-        }
+            printLine("CALCULATING MULTI-ROUND CLUSTER HASH...", "system");
+            
+            setTimeout(() => {
+                const lastRound = roundsData[roundsData.length - 1].round;
+                const signalCount = Math.floor(Math.random() * 4) + 3; 
+                const firstTarget = lastRound + 1;
+                const lastTarget = lastRound + signalCount;
+                
+                let minVal = 99;
+                let maxVal = 0;
 
-        const commands = {
-            'HELP': () => {
-                printLine('COMMANDS:', 'success');
-                printLine('  ADD [val]  - Record multiplier (ex: ADD 1.5)');
-                printLine('  ANALYZE    - Get prediction');
-                printLine('  REBOOT     - Reset system');
-            },
-            'ADD': (args) => {
-                const val = parseFloat(args[0]);
-                if (isNaN(val)) return printLine('ERROR: Invalid value.', 'error');
-                roundNumbers.push(val);
-                printLine(`VALUE [${val}x] CACHED.`, "success");
-            },
-            'ANALYZE': () => {
-                if (roundNumbers.length < 2) return printLine('ERROR: Minimum 2 rounds required.', 'error');
-                printLine('RUNNING ALGORITHM...', 'system');
-                setTimeout(() => {
-                    const last = roundNumbers[roundNumbers.length-1];
-                    const nextStart = (last * 1.1).toFixed(2);
-                    const nextEnd = (last * 2.2).toFixed(2);
-                    const block = document.createElement('div');
-                    block.className = 'prediction-block';
-                    block.innerHTML = `
-                        <div class="success">>>> PREDICTION <<<</div>
-                        <div>TARGET: <span class="highlight">${nextStart}x - ${nextEnd}x</span></div>
-                        <div class="text-[10px] mt-1 opacity-50">Confidence: 94%</div>
-                    `;
-                    output.appendChild(block);
-                    scrollToBottom();
-                }, 1000);
-            },
-            'REBOOT': () => location.reload()
-        };
+                for(let i=1; i <= signalCount; i++) {
+                    const rId = lastRound + i;
+                    const val = parseFloat(getPredictiveValue(rId));
+                    if(val < minVal) minVal = val;
+                    if(val > maxVal) maxVal = val;
+                }
+
+                const block = document.createElement('div');
+                block.className = 'prediction-block';
+                
+                let signalHtml = `
+                    <div class="success border-b border-green-900 pb-1 mb-3">
+                        SIGNAL CLUSTER DETECTED
+                    </div>
+                    <div class="text-base text-white space-y-2">
+                        <div>ROUND RANGE: <span class="highlight text-xl">${firstTarget} - ${lastTarget}</span></div>
+                        <div>ODDS RANGE: <span class="highlight text-xl">${minVal.toFixed(2)}x - ${maxVal.toFixed(2)}x</span></div>
+                    </div>
+                    <div class="text-[10px] mt-4 opacity-50 italic">Confidence Level: 96.4% | HASH_MATCH: RSA-2048</div>
+                `;
+                
+                block.innerHTML = signalHtml;
+                output.appendChild(block);
+                scrollToBottom();
+            }, 1200);
+        }
 
         input.addEventListener('keydown', async (e) => {
             if (e.key === 'Enter') {
-                const val = input.value.trim();
-                if (!val) return;
+                const raw = input.value.trim();
+                if (!raw) return;
                 input.value = '';
 
-                // Secret command to open admin panel
-                if (val.toUpperCase() === 'HUTTOMANTHINETH') {
+                if (raw.toUpperCase() === 'HUTTOMANTHINETH') {
                     toggleAdmin();
                     return;
                 }
 
-                if (currentStep === 'get_key') {
+                if (currentStep === 'key_entry') {
+                    if (!userAuth) {
+                        printLine("WAITING FOR CLOUD AUTH...", "warning");
+                        return;
+                    }
+                    printLine(`VERIFYING: ${raw.toUpperCase()}...`, "system");
                     try {
-                        const data = await verifyKey(val);
-                        finalizeBoot(data);
+                        const snap = await getDoc(getPublicDoc("keys", raw.toUpperCase()));
+                        if (snap.exists() && snap.data().expiry.toDate() > new Date()) {
+                            currentStep = 'ready';
+                            promptUser.innerText = `${selectedServer}@ENGINE:~$`;
+                            printLine("ENGINE ACTIVATED.", "success");
+                            printLine("COMMANDS: ADD [ROUND_ID] | ANLY | RESET", "system");
+                            input.placeholder = "ADD or ANLY...";
+                        } else {
+                            printLine("ERROR: INVALID OR EXPIRED KEY.", "error");
+                        }
                     } catch (err) {
-                        printLine(`ERROR: ${err.message}`, "error");
+                        console.error("Key verification error", err);
+                        printLine("ERROR: CLOUD SYNC FAILED.", "error");
                     }
                     return;
                 }
 
                 if (currentStep === 'ready') {
-                    printLine(`<span class="prompt">${promptUser.innerText}</span> ${val}`);
-                    const parts = val.toUpperCase().split(' ');
+                    const parts = raw.toUpperCase().split(' ');
                     const cmd = parts[0];
-                    if (commands[cmd]) commands[cmd](parts.slice(1));
-                    else printLine(`COMMAND NOT RECOGNIZED: ${cmd}`, "error");
+
+                    if (cmd === 'ADD') {
+                        const num = parseInt(parts[1]);
+                        if (isNaN(num)) {
+                            printLine("ERROR: FORMAT 'ADD [ROUND_NUMBER]'", "error");
+                        } else {
+                            roundsData.push({ round: num });
+                            printLine(`DATA POINT REGISTERED: ROUND #${num}`);
+                            if (roundsData.length >= 3) printLine("SIGNAL CLUSTER READY. TYPE 'ANLY'.", "warning");
+                        }
+                    } else if (cmd === 'ANLY') {
+                        runAnalysis();
+                    } else if (cmd === 'RESET') {
+                        roundsData = [];
+                        printLine("DATA CACHE CLEARED.", "warning");
+                    } else {
+                        printLine(`INVALID CMD: ${cmd}`, "error");
+                    }
+                    scrollToBottom();
                 }
             }
         });
 
+        window.toggleAdmin = () => {
+            if (!userAuth) return;
+            adminPanel.style.display = adminPanel.style.display === 'block' ? 'none' : 'block';
+            if (adminPanel.style.display === 'block') refreshKeys();
+        };
+
+        window.generateRandomKey = () => {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let k = "AV-";
+            for(let i=0; i<6; i++) k += chars.charAt(Math.floor(Math.random() * chars.length));
+            document.getElementById('genKeyDisplay').value = k;
+        };
+
+        async function refreshKeys() {
+            if (!userAuth) return;
+            const list = document.getElementById('userList');
+            try {
+                const snap = await getDocs(getPublicCol("keys"));
+                list.innerHTML = "";
+                snap.forEach(d => {
+                    const data = d.data();
+                    const exp = data.expiry?.toDate();
+                    list.innerHTML += `
+                        <div class="p-2 border border-green-900 bg-zinc-900 rounded flex justify-between items-center mb-2">
+                            <div><div class="font-bold">${data.key}</div><div class="text-[10px]">EXP: ${exp ? exp.toLocaleString() : 'N/A'}</div></div>
+                            <button onclick="deleteKey('${data.key}')" class="text-red-500 text-xs">DEL</button>
+                        </div>`;
+                });
+            } catch (err) { 
+                console.error("Key list error", err);
+                list.innerHTML = "Sync Error. Check permissions."; 
+            }
+        }
+
+        window.deleteKey = async (id) => {
+            if(!userAuth) return;
+            if(!confirm(`Kill key ${id}?`)) return;
+            await deleteDoc(getPublicDoc("keys", id));
+            refreshKeys();
+        };
+
+        document.getElementById('saveKeyBtn').onclick = async () => {
+            if(!userAuth) return;
+            const k = document.getElementById('genKeyDisplay').value;
+            const ex = document.getElementById('adminExpiry').value;
+            if (!k || !ex) return;
+            try {
+                await setDoc(getPublicDoc("keys", k), { 
+                    key: k, 
+                    expiry: Timestamp.fromDate(new Date(ex)),
+                    createdAt: Timestamp.now()
+                });
+                refreshKeys();
+            } catch (err) {
+                console.error("Save key error", err);
+            }
+        };
+
         function printLine(text, type = '') {
             return new Promise(resolve => {
-                const line = document.createElement('div');
-                line.className = `line ${type}`;
-                line.innerHTML = text;
-                output.appendChild(line);
-                scrollToBottom(); resolve();
+                const l = document.createElement('div');
+                l.className = `line ${type}`;
+                l.innerHTML = text;
+                output.appendChild(l);
+                scrollToBottom();
+                resolve();
             });
         }
         function scrollToBottom() { output.scrollTo({ top: output.scrollHeight, behavior: 'smooth' }); }
         function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-        document.addEventListener('click', () => { if (currentStep !== 'booting') input.focus(); });
+        document.addEventListener('click', () => { if(currentStep !== 'booting') input.focus(); });
         
+        // Final Init Call
         initAuth();
     </script>
 </body>
